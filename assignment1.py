@@ -751,48 +751,52 @@ def select_sections(occupancy_probability):
     #length of columns
     m = len(occupancy_probability[0])
     # initiate table with None to store previous position tuple in the current tuple position
-    dp = [[None] * m for _ in range(n)]
+    #dp = [[None] * m for _ in range(n)]
     #list leave to store the items to be outputed at the end
     dp_ret = []
 
+    #start from second row
     for i in range(1, n, 1):
+        #calculate for multiple ends through each corresponding column
         for j in range(m):
             #always exist
             top_element = op[i-1][j]
             current_value = op[i][j]
             #previous position tuple
-            pre_ele_pos = (None, None)
+            #pre_ele_pos = (None, None)
 
+            #start from multiple ends
             # edge cases: element at column with index 0
             if j == 0:
                 #edge case: There N rows but 1 column
-                if m == 1:
+                if m <= 1:
                     #Only top value is possible
                     current_value += top_element
-                    pre_ele_pos = (i - 1, j)
+                    #pre_ele_pos = (i - 1, j)
 
                 else:
                     #less comparisons
                     right_top_element = op[i-1][j+1]
+
                     #if value on top less and equal to value on right-top, current value add top value
                     if top_element <= right_top_element:
                         current_value += top_element
                         #update previous tuple position
-                        pre_ele_pos = (i-1, j)
+                        #pre_ele_pos = (i-1, j)
                     else:
                         current_value += right_top_element
-                        pre_ele_pos = (i-1,j+1)
+                        #pre_ele_pos = (i-1,j+1)
 
             #edge cases: element at column with index m-1
-            elif j == (m-1) and (m-1) != 0:
+            elif j == (m-1):
                 #less comparisons
                 left_top_element = op[i-1][j-1]
                 if top_element <= left_top_element:
                     current_value += top_element
-                    pre_ele_pos = (i - 1, j)
+                    #pre_ele_pos = (i - 1, j)
                 else:
                     current_value += left_top_element
-                    pre_ele_pos = (i - 1, j - 1)
+                    #pre_ele_pos = (i - 1, j - 1)
 
              #general cases:
             else:
@@ -806,60 +810,110 @@ def select_sections(occupancy_probability):
                     #compare top value with left top value
                     if top_element <= left_top_element:
                         current_value += top_element
-                        pre_ele_pos = (i - 1, j)
+                        #pre_ele_pos = (i - 1, j)
                     else:
                         current_value += left_top_element
-                        pre_ele_pos = (i - 1, j - 1)
+                        #pre_ele_pos = (i - 1, j - 1)
 
                 else: #compare top value with right top value
                     if top_element <= right_top_element:
                         current_value += top_element
-                        pre_ele_pos = (i - 1, j)
+                        #pre_ele_pos = (i - 1, j)
                     else:
                         current_value += right_top_element
-                        pre_ele_pos = (i - 1, j + 1)
+                        #pre_ele_pos = (i - 1, j + 1)
 
             # update values of matrix with current total occupancy probability
             op[i][j] = current_value
-            dp[i][j] = pre_ele_pos
+            #dp[i][j] = pre_ele_pos
+
 
     # Backtracking
     #pre-set in adance to avoid the backtracing not working correctly if the index 0 value is the minimum value
     #minimum value in the start row
+    #If there is only one row, the start row = end row
     min_value = op[n-1][0]
     #corresponding previous element position
-    pre_pos = dp[n-1][0]
+    #pre_pos = dp[n-1][0]
     #tuple position of the minimum value
     current_pos = (n-1, 0)
 
-    #the value in the index 0 is minimum as there is only 1 column
-    if m == 1:
-        current_pos = (n - 1, j)
-        pre_pos = dp[n - 1][j]
+    # Find the minimum value from the last row of the dp table
+    # smallest_total_occupancy = min(dp[-1])  # it has the minimum number in the last row
 
-    else:
-        #Retrieve the minimum value and position tuple and the corresponding presition position tuple
-        for j in range(1,m,1):
-            # print(str(min_value))
-            if op[n-1][j] < min_value:
-                min_value = op[n-1][j]
-                pre_pos = dp[n-1][j]
-                current_pos = (n-1, j)
+    # find the minimum total occupancy probability from the last row
+    for j in range(m):
+        # print(str(min_value))
+        if op[n-1][j] < min_value:
+            min_value = op[n-1][j]
+            #pre_pos = dp[n-1][j]
+            current_pos = (n-1, j)
+
 
     #make start tuple position as one of item in list
     dp_ret = [current_pos]
     # print(dp_ret)
-    #Main backtracking to reconstruct the route the stored previous tuple positions
-    while pre_pos != None:
-        dp_ret += [pre_pos]
-        pre_pos = dp[pre_pos[0]][pre_pos[1]]
 
+
+    
+    #Backtrack by comparing the minimum values between top, top-left and top-right
+    #going upward from the second last row
+    j = current_pos[1]
+    for i in range(n-2, -1, -1):
+        # always exist
+        #print(j)
+        top_element = op[i][j]
+        pre_ele_pos = (i,j)
+        # start from multiple starts
+        # edge cases: element at column with index 0
+        if j == 0:
+            # edge case: There N rows but 1 column
+            if m <= 1:
+                # Only top value is possible
+                pass
+
+            else:
+                # less comparisons
+                right_top_element = op[i][j + 1]
+
+                # if value on top less and equal to value on right-top, current value add top value
+                if right_top_element < top_element:
+                    # update previous tuple position
+                    j += 1
+                    pre_ele_pos = (i, j)
+
+        # edge cases: element at column with index m-1 at the end
+        elif j == (m - 1):
+            # less comparisons
+            left_top_element = op[i][j - 1]
+            if left_top_element < top_element:
+                j -= 1
+                pre_ele_pos = (i, j)
+                
+
+        # general cases:
+        else:
+            # more comparisons
+            left_top_element = op[i][j - 1]
+            right_top_element = op[i][j + 1]
+
+            # compare left top value less and equal to right top value
+            if left_top_element < right_top_element:
+
+                # compare top value with left top value
+                if left_top_element < top_element:
+                    j -= 1
+                    pre_ele_pos = (i, j)
+                    
+            else:  # compare top value with right top value
+                if right_top_element < top_element:
+                    j += 1
+                    pre_ele_pos = (i, j)
+        dp_ret += [pre_ele_pos]
+    #print(op)
     dp_ret = reverse(dp_ret)
-    #add minimum value as one list item with the reconstrcuted backtracking list into a same list
-
-    dp_ret = [min_value] + [dp_ret]
-    # print(dp_ret)
-    return dp_ret
+    return [min_value, dp_ret]
+    
 
 def reverse(dp_ret):
     """
@@ -887,20 +941,12 @@ def reverse(dp_ret):
     return dp_ret
 
 if __name__ == '__main__':
-    start = 4
-    end = 0
-    passengers = []
-    roads = [
-        (0, 1, 28, 22),
-        (3, 2, 21, 10),
-        (4, 1, 26, 20),
-        (1, 3, 5, 3),
-        (0, 4, 24, 13),
-        (2, 1, 26, 15),
-        (2, 0, 26, 26)
-    ]
-    #result = [4, 1, 3, 2, 0]  # Optimal route is 78 mins
-    optimalRoute(start, end, passengers, roads)
+    occupancy_probability = [[0, 76, 38, 2],
+                             [1, 94, 54, 1],
+                             [2, 86, 86, 99],
+                             [3, 0, 0, 0],
+                             [99, 99, 99, 0]]
+    print(select_sections(occupancy_probability))
 
 
 
